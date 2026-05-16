@@ -1,0 +1,483 @@
+Overview Instructions Resources Submit
+Objective
+Build a multi-peer video chat application using WebRTC, TypeScript, and Next.js. You will
+implement a custom WebSocket signaling server, manage the full WebRTC connection
+lifecycle (offer, answer, ICE candidates), and create a dynamic UI with in-call controls.
+This project is crucial for mastering real-time communication, a core skill for building
+modern collaborative and streaming platforms.
+Description
+Background
+Pending Submission
+Please submit your work when ready.TIME REMAINING
+7h
+Deadline: 16 May 2026, 04:59 pmBuild a Production-Ready WebRTC Video Chat
+Application with Next.js and TypeScript
+MandatoryBack
+Domain
+Frontend DevelopmentSkills
+API Development Backend Development Communication
+Frontend Development Prorgamming State Management
+WebRTC
+Difficulty
+HardTools
+Docker Next.Js Node.Js React Socket.IO Tailwind CSS
+Typescript
+Industries
+Telecommunications
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 1/14
+Web Real-Time Communication (WebRTC) is a powerful, open-source framework that
+enables peer-to-peer (P2P) audio, video, and data sharing directly within web
+browsers, eliminating the need for plugins or native applications. Its core strength lies in
+establishing direct connections between clients, which significantly reduces latency
+and server costs for streaming media. However, WebRTC cannot discover other peers
+or negotiate connection details on its own. This process, known as 'signaling,' requires a
+separate server to coordinate communication.
+This project combines the frontend power of Next.js and the type safety of TypeScript
+with the real-time capabilities of WebSockets to build a robust signaling mechanism.
+You will implement the 'offer/answer' model, where one peer sends a session
+description (the 'offer'), and another responds with its own (the 'answer'). To traverse
+network address translators (NATs) and firewalls, which often obscure a device's true IP
+address, WebRTC uses the Interactive Connectivity Establishment (ICE) framework. ICE
+employs STUN (Session Traversal Utilities for NAT) servers to discover a peer's public IP
+address and TURN (Traversal Using Relays around NAT) servers to relay traffic if a direct
+P2P connection fails. For this task, you will configure your application to use publicly
+available STUN servers.
+The architecture will involve a custom Next.js server that runs a WebSocket instance
+alongside the standard Next.js application handler. This allows the same server process
+to handle both API/page rendering and real-time signaling events. For multi-peer calls,
+you will implement a 'mesh' topology, where every participant establishes a direct P2P
+connection with every other participant. While simple to implement for small groups,
+this model's connection count grows quadratically, making it important to understand
+its scalability limitations.
+Implementation Details
+Your task is to build a complete video chat application from the ground up, including
+the signaling server, the WebRTC client logic, and the user interface. The application
+must be containerized for easy deployment and evaluation.
+Step 1: Project Setup and Custom Server
+Initialize a new Next.js project with TypeScript. You will need to create a custom server to
+run a WebSocket server alongside Next.js. Create a server.ts file in your project root.
+// server.ts
+import { createServer } from 'http';
+import { parse } from 'url';
+import next from 'next';
+import { Server } from 'socket.io';
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
+const port = process.env.PORT || 3000;
+app.prepare().then(() => {
+  const httpServer = createServer((req, res) => {
+    const parsedUrl = parse(req.url!, true);
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 2/14
+Update your package.json scripts to run this custom server: "dev": "ts-node --project
+tsconfig.server.json server.ts"
+Step 2: Containerization with Docker
+Create a Dockerfile and docker-compose.yml to run your application in a containerized
+environment. This is mandatory for submission.    handle(req, res, parsedUrl);
+  });
+  const io = new Server(httpServer, {
+    cors: {
+        origin: "*", // Configure for production as needed
+        methods: ["GET", "POST"]
+    }
+  });
+  io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+    // Handle signaling events here as per core_requirements
+    // Example: socket.on('join-room', (roomId) => { ... });
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+      // Broadcast disconnection to other users in the room
+    });
+  });
+  httpServer.listen(port, () => {
+    console.log(`> Ready on http://localhost:${port}`);
+  });
+});
+# docker-compose.yml
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Define environment variables required by your app
+      - NODE_ENV=development
+      - NEXT_PUBLIC_STUN_SERVER=stun:stun.l.google.com:19302
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 3/14
+Remember to create a simple health check API route (e.g., /pages/api/health.ts) that
+returns a 200 status.
+Step 3: Environment Configuration
+Create a .env.example file to document all necessary environment variables. This file
+should be committed to your repository.
+Step 4: Dynamic Room Implementation
+Use the Next.js App Router to create a dynamic route for video chat rooms, such as
+/app/room/[roomId]/page.tsx. The roomId will be a UUID used to isolate signaling events on
+the server.
+Step 5: WebRTC Client Logic
+On the client side, you will manage the WebRTC logic. This involves:
+1. Connecting to the WebSocket server.
+2. Requesting access to the user's camera and microphone using
+navigator.mediaDevices.getUserMedia().
+3. When a room has two or more participants, create RTCPeerConnection objects for
+each pair of peers.
+4. Implement the full offer/answer flow, including creating offers, setting local and
+remote descriptions, and exchanging ICE candidates through your signaling
+server.
+5. Dynamically create <video> elements to display local and remote video streams.
+Step 6: User Interface and Controls
+Develop a clean, responsive UI using a framework like Tailwind CSS. The UI must include:
+1. A primary view for the main remote video stream (or a grid for multi-peer calls).
+2. A smaller, picture-in-picture style view for the local user's video.
+3. Controls for muting the microphone, toggling the camera, and hanging up the
+call. Use data-test-id attributes on these elements as specified in the core
+requirements for verification.
+4. A status indicator to show the connection state (e.g., "Waiting for others...",
+"Connected").
+Step 7: Submission Artifacts Checklist# .env.example
+# Port for the application server
+PORT=3000
+# Publicly accessible STUN server for NAT traversal
+# This variable must be prefixed with NEXT_PUBLIC_ to be available on the client
+NEXT_PUBLIC_STUN_SERVER=stun:stun.l.google.com:19302
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 4/14
+Ensure your submission includes all of the following artifacts:
+ README.md: A detailed project overview, architecture explanation, and setup
+instructions.
+ docker-compose.yml: Defines the application service and its configuration.
+ Dockerfile: Instructions to build the application container image.
+ .env.example: Documents all environment variables required to run the
+application.
+ submission.json: (If required by a core requirement for test credentials, not
+required for this task).
+ /app: All application source code, including the Next.js frontend and custom
+server.
+ /tests: (Recommended) Directory containing any automated tests you have
+written.
+Implementation Guidelines
+These are suggestions to guide your implementation, not strict requirements.
+Architecture and State Management
+1. Separation of Concerns: Consider creating separate modules or hooks for
+managing WebSocket signaling (useSignaling.ts), WebRTC peer connections
+(useWebRTC.ts), and media streams (useUserMedia.ts). This keeps your React
+components clean and focused on rendering UI.
+2. State Management: For managing the complex state of multiple peer
+connections, their statuses, and media streams, a state management library (like
+Zustand, Jotai, or Redux Toolkit) can be very helpful. Alternatively, React Context
+combined with useReducer can manage state effectively without external
+dependencies.
+3. Peer Connection Map: When implementing the multi-peer mesh, use a Map or a
+plain object on the client to store RTCPeerConnection instances, keyed by the peer's
+socketId. This makes it easy to add, access, and remove connections as peers join
+or leave.
+WebRTC Best Practices
+1. Resource Cleanup: WebRTC objects and media streams are not automatically
+garbage-collected when a component unmounts. Always implement cleanup
+logic. When a peer disconnects or the user hangs up, explicitly call
+peerConnection.close(). For media streams, iterate through stream.getTracks() and
+call track.stop() on each one to release the camera and microphone.
+2. ICE Trickling: Instead of waiting for all ICE candidates to be gathered before
+sending the offer/answer, send them to the other peer as they are discovered. This
+technique, known as "trickle ICE," can significantly speed up connection
+establishment.
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 5/14
+3. Error Handling: Implement robust error handling for both getUserMedia (e.g., user
+denies permission) and RTCPeerConnection (e.g., connection fails). Provide clear
+feedback to the user in these cases.
+Security and Scalability
+1. Signaling Security: In a production environment, your WebSocket server should be
+secured. While not required for this task, consider how you might add
+authentication to your signaling server to prevent unauthorized users from joining
+rooms.
+2. Scalability Trade-offs: The mesh topology is simple but doesn't scale well. A 4-
+person call requires each client to manage 3 upstream and 3 downstream
+connections. For larger calls, services typically use a Selective Forwarding Unit
+(SFU) or a Multi-point Control Unit (MCU) to route media through a central server,
+reducing client-side load. You should be prepared to discuss these alternatives.
+FAQ
+1. Q: Do I need a TURN server?
+1. A: For this task, a STUN server (as specified in env-example) is sufficient, as
+most testing will occur on local networks or environments where NAT
+traversal is straightforward. A TURN server is only needed for complex
+corporate or symmetric NAT scenarios, which are out of scope. (Related to
+env-example)
+2. Q: Can I use a library like simple-peer?
+1. A: Yes, you can use a WebRTC abstraction library. However, be prepared to
+explain the underlying WebRTC APIs and concepts it abstracts away (e.g.,
+RTCPeerConnection, addTrack, offer/answer flow).
+3. Q: How do I test a multi-peer call by myself?
+1. A: You can open the same room URL in multiple browser tabs or windows.
+Each tab will act as a separate peer. Note that your browser may limit
+camera/microphone access to one tab at a time, but you can still test the
+connection logic.
+4. Q: My video connection isn't establishing. What should I check?
+1. A: First, check your browser's developer console for any WebRTC or
+WebSocket errors. Second, verify that signaling messages (offer, answer,
+ice-candidate) are being correctly sent and received via the WebSocket
+server. Third, check the WebRTC internals page in your browser
+(chrome://webrtc-internals for Chrome) for detailed connection status and
+diagnostics.
+5. Q: How do I manage state when a new peer joins a room that already has active
+participants?
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 6/14
+1. A: When a new peer joins, the server should ideally send them a list of existing
+participant IDs in that room. The new peer then initiates a P2P connection
+with each of them. Similarly, the server should notify all existing peers of the
+new arrival, so they can initiate a connection back. This ensures the mesh is
+fully connected. (Related to multi-peer-mesh)
+6. Q: What are SDP (Session Description Protocol) offers and answers?
+1. A: SDP is a format for describing multimedia session details. In WebRTC, an
+'offer' is an SDP object from the calling peer describing their proposed media
+capabilities (e.g., codecs, resolutions). The 'answer' is the receiving peer's SDP
+response, indicating their own capabilities and agreeing on a common
+format for the call.
+7. Q: Why does the custom server server.ts need ts-node?
+1. A: The Next.js dev command is optimized for compiling and running the
+Next.js application code itself. Since server.ts is a custom entry point written
+in TypeScript, we use ts-node to compile and execute it on the fly in the
+development environment. For production builds, you would first compile
+server.ts to JavaScript and then run it with Node.
+Core Requirements
+1.The application must be fully containerized using Docker and Docker Compose. The
+submission must include a docker-compose.yml file and any necessary Dockerfile(s)
+at the project root.
+Contract Specification:
+Required Files
+1. docker-compose.yml in the root directory.
+2. Dockerfile in the root directory.
+Service Requirements
+1. The docker-compose.yml must define at least one service for the Next.js
+application.
+2. This service must expose the application port (e.g., 3000).
+3. The service must include a healthcheck that verifies the application is running,
+for example, by querying a /api/health endpoint.
+Verification
+1. Run docker-compose up --build -d from the project root.
+2. All services must start without errors.
+3. After the start_period, the application service container must report a healthy
+status.
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 7/14
+4. The application should be accessible on the exposed port (e.g.,
+http://localhost:3000).
+2.A .env.example file must be present at the root of the repository, documenting all
+environment variables required for the application to run.
+Contract Specification:
+Required File
+1. .env.example in the root directory.
+Required Variables
+1. PORT: The port on which the server will run.
+2. NEXT_PUBLIC_STUN_SERVER: The URL of the STUN server to be used by the WebRTC
+client.
+3. Any other variables required by your implementation must also be
+documented.
+Verification
+1. Check for the existence of the .env.example file.
+2. Parse the file to ensure it contains the keys PORT and NEXT_PUBLIC_STUN_SERVER.
+3. Verify that no real secrets or credentials are included; placeholder values
+should be used.
+3.The frontend application must establish a persistent WebSocket connection to the
+signaling server upon loading.
+Contract Specification:
+Behavior
+1. When a user navigates to a room page (e.g., /room/some-uuid), the client-side
+code initiates and successfully establishes a WebSocket connection.
+Verification
+1. Start the application.
+2. Navigate to a valid room URL in a browser with developer tools open.
+3. In the 'Network' tab, filter for 'WS' (WebSocket) requests.
+4. Verify that a WebSocket connection is established and its status is 101
+Switching Protocols.
+5. Confirm that no connection errors appear in the browser console.
+4.Upon entering a room, the application must request camera/microphone
+permissions, display the local video stream, and notify the signaling server that the
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 8/14
+user has joined the room.
+Contract Specification:
+UI Elements
+1. A <video> element must be present to display the user's local video feed. This
+element must have the attribute data-test-id="local-video".
+WebSocket Events
+1. The client must send a join-room event over the WebSocket connection.
+2. The event payload must contain the roomId from the URL.
+Verification
+1. Navigate to /room/[roomId].
+2. The browser should prompt for media permissions. Grant them.
+3. Use a DOM query to find the element [data-test-id="local-video"].
+4. Verify the video element is playing the local camera feed (e.g., its readyState is
+> 2).
+5. Intercept WebSocket traffic and verify that a join-room message with the
+correct roomId is sent to the server.
+5.When a second user joins the same room, a WebRTC peer-to-peer connection must
+be established between the two users, and each user must see the other's video
+stream.
+Contract Specification:
+Signaling Flow
+1. The application must correctly implement the WebRTC offer/answer model,
+exchanging offer, answer, and ice-candidate messages through the
+WebSocket server.
+UI Elements
+1. A container element with data-test-id="remote-video-container" must exist.
+2. When a remote peer connects, a new <video> element playing the remote
+stream must be added to this container.
+Verification
+1. Open a room URL in a browser (Peer 1).
+2. Open the same room URL in a second browser tab/window (Peer 2).
+3. In Peer 1's window, use a DOM query to find [data-test-id="remote-video-
+container"].
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 9/14
+4. Verify this container now holds one playing <video> element corresponding to
+Peer 2's stream.
+5. Repeat the verification on Peer 2's window to ensure it is displaying Peer 1's
+stream.
+6.The UI must provide a button to mute and unmute the user's microphone. The state
+change must be reflected in the media stream sent to peers.
+Contract Specification:
+UI Element
+1. A button with the attribute data-test-id="mute-mic-button" must be present.
+Behavior
+1. Clicking the button should toggle the enabled property of the local
+MediaStream's audio track.
+2. The UI should provide visual feedback (e.g., a changed icon) indicating the
+muted state.
+Verification
+1. Establish a two-peer call.
+2. On Peer 1, use Playwright/testing script to access the window object and get the
+local MediaStream.
+3. Initially, verify that stream.getAudioTracks()[0].enabled is true.
+4. Simulate a click on the button [data-test-id="mute-mic-button"].
+5. Verify that stream.getAudioTracks()[0].enabled is now false.
+6. Click the button again and verify the property returns to true.
+7.The UI must provide a button to turn the user's camera on and off. When turned off,
+peers should see a black screen or placeholder instead of the video.
+Contract Specification:
+UI Element
+1. A button with the attribute data-test-id="toggle-camera-button" must be present.
+Behavior
+1. Clicking the button should toggle the enabled property of the local
+MediaStream's video track.
+Verification
+1. Establish a two-peer call.
+2. On Peer 1, access the local MediaStream via a testing script.
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 10/14
+3. Initially, verify that stream.getVideoTracks()[0].enabled is true.
+4. Simulate a click on the button [data-test-id="toggle-camera-button"].
+5. Verify that stream.getVideoTracks()[0].enabled is now false. On Peer 2's screen,
+the video from Peer 1 should freeze or go black.
+6. Click the button again and verify the property returns to true and the video
+resumes.
+8.The UI must provide a button to end the call. This action should close the peer
+connection and clean up all associated resources.
+Contract Specification:
+UI Element
+1. A button with the attribute data-test-id="hangup-button" must be present.
+Behavior
+1. Clicking the button closes all active RTCPeerConnection objects.
+2. It stops all local media tracks (track.stop()).
+3. It disconnects from the WebSocket signaling server.
+4. The user's UI should transition away from the active call view (e.g., redirect to
+the home page).
+Verification
+1. Establish a two-peer call.
+2. On Peer 1, click the [data-test-id="hangup-button"].
+3. Verify that Peer 1 is redirected away from the room URL.
+4. On Peer 2, verify that the remote video element for Peer 1 is removed from the
+DOM.
+9.The application must display the current connection status to the user.
+Contract Specification:
+UI Elements
+1. An element with data-test-id="status-waiting" must be visible when the user is
+alone in the room.
+2. An element with data-test-id="status-connecting" should appear while a peer
+connection is being established.
+3. An element with data-test-id="status-connected" must be visible when at least
+one peer connection is fully established and active.
+Verification
+1. Navigate to a room. Verify [data-test-id="status-waiting"] is visible.
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 11/14
+2. Have a second peer join. During negotiation, verify [data-test-id="status-
+connecting"] is visible (this state might be brief).
+3. Once the remote video appears, verify [data-test-id="status-connected"] is
+visible and the other status indicators are hidden.
+10.The application must support a video call with up to 4 participants in a mesh
+topology, where each participant connects directly to every other participant.
+Contract Specification:
+Behavior
+1. When 4 users are in the same room, each user must establish 3 separate
+RTCPeerConnections.
+2. Each user's UI should display the video streams from the other 3 participants.
+UI Layout
+1. The [data-test-id="remote-video-container"] should display all remote videos in
+a grid layout.
+Verification
+1. Open the same room URL in 4 separate browser instances (Peers 1, 2, 3, and 4).
+2. In Peer 1's window, verify that the [data-test-id="remote-video-container"]
+contains exactly 3 playing <video> elements.
+3. Repeat this verification for one of the other peers (e.g., Peer 3) to ensure
+connectivity is bidirectional.
+11.When a participant disconnects (e.g., closes their browser tab), they should be
+gracefully removed from the call on all remaining participants' screens.
+Contract Specification:
+Behavior
+1. The signaling server must detect the disconnection and notify the other users
+in the room.
+2. Remaining clients must close the RTCPeerConnection associated with the
+disconnected peer.
+3. The video element for the disconnected peer must be removed from the UI.
+Verification
+1. Establish a 3-peer call (Peers 1, 2, and 3).
+2. On Peer 1's window, verify there are 2 remote video elements.
+3. Close the browser tab/window for Peer 2.
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 12/14
+4. On Peer 1's window, verify that Peer 2's video element is removed from the DOM,
+and only Peer 3's video remains.
+12.The application must include a text chat panel allowing participants in the room to
+send and receive messages in real-time.
+Contract Specification:
+UI Elements
+1. A text input field with data-test-id="chat-input".
+2. A submit button with data-test-id="chat-submit".
+3. A container for chat messages with data-test-id="chat-log".
+4. Each received message should be rendered in an element with data-test-
+id="chat-message".
+Behavior
+1. Typing a message in the input and clicking submit sends the message
+payload over the existing WebSocket connection.
+2. The server broadcasts this message to all other participants in the same
+room.
+3. All clients in the room append the received message to their chat log.
+Verification
+1. Establish a two-peer call.
+2. On Peer 1, type "Hello" into [data-test-id="chat-input"] and click [data-test-
+id="chat-submit"].
+3. On Peer 2, verify that the [data-test-id="chat-log"] now contains an element
+[data-test-id="chat-message"] with the text "Hello".
+About Us
+Contact Us
+Privacy Policy
+Terms and Conditions
+All rights reserved. Copyright, Partnr 2025-26
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 13/14
+5/16/26, 9:25 AM Partnr Network - Talent Layer for Borderless Societies
+https://app.partnr.network/global-placement-program/tasks/f91011d8a2bd4535a722 14/14
