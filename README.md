@@ -66,5 +66,4 @@ If you prefer to run the application locally without Docker:
 6. Use the controls at the bottom to toggle your mic/camera, or the red button to hang up and leave the room.
 7. Use the right-hand panel to send text messages to everyone in the room.
 
-## License
-MIT License
+
