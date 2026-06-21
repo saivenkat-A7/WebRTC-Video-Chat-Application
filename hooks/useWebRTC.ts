@@ -124,13 +124,10 @@ export function useWebRTC(roomId: string): UseWebRTCReturn {
       });
     });
 
-    socket.on("user-joined", (peerId: string) => {
-      setStatus("connecting");
-      // we don't create offer here. The existing-users handles sending offers to existing users.
-      // So the new user will receive offers from existing users? No, existing users receive 'user-joined'.
-      // Wait, if I am an existing user, and someone joins, I should probably create an offer to them.
-      // Let's have the newly joined user send offers to existing users. This is what existing-users does!
-      // So existing users just wait for the offer.
+    socket.on("user-joined", (_peerId: string) => {
+      // A new user joined. They will send us an offer via the 'existing-users' flow.
+      // We simply wait to receive their offer — no action needed here.
+      // Status will update to 'connecting' when we receive their offer.
     });
 
     socket.on("offer", async (payload: { caller: string; sdp: any }) => {
@@ -210,9 +207,10 @@ export function useWebRTC(roomId: string): UseWebRTCReturn {
   }, [localStream]);
 
   const sendMessage = useCallback((msg: string) => {
-    if (socketRef.current) {
-      socketRef.current.emit("chat-message", { roomId, message: msg, senderId: socketRef.current.id });
-      setMessages((prev) => [...prev, { senderId: socketRef.current?.id || "", message: msg, isSelf: true }]);
+    if (socketRef.current && socketRef.current.connected) {
+      const senderId = socketRef.current.id ?? "";
+      socketRef.current.emit("chat-message", { roomId, message: msg, senderId });
+      setMessages((prev) => [...prev, { senderId, message: msg, isSelf: true }]);
     }
   }, [roomId]);
 

@@ -69,7 +69,7 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
-    console.log(`> Ready on http://localhost:${port}`);
+  httpServer.listen(Number(port), '0.0.0.0', () => {
+    console.log(`> Ready on http://0.0.0.0:${port}`);
   });
 });
